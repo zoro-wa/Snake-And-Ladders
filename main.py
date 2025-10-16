@@ -3,12 +3,22 @@ from os.path import join
 import random
 
 
+class Dice(pygame.sprite.Sprite):
+    def __init__(self, pos, groups):
+        super().__init__(groups)
+        self.image = pygame.image.load(join('Game', 'dice', 'inverted-dice-1.png')).convert_alpha()
+        self.image = pygame.transform.rotozoom(self.image, 0, 0.1)
+        self.rect = self.image.get_rect(center = pos)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, groups):
         super().__init__(groups)
-        self.image = pygame.image.load(join('Game', 'inverted-dice-1.png')).convert_alpha()
+        self.image = pygame.image.load(join('Game', 'player', 'player1.png')).convert_alpha()
+        self.image = pygame.image.load(join('Game', 'player', 'player2.png')).convert_alpha()
         self.image = pygame.transform.rotozoom(self.image, 0, 0.1)
-        self.rect = self.image.get_rect(center = pos)
+        self.rect = self.image.get_rect(bottomleft = pos)
+
 
 
 pygame.init()
@@ -26,8 +36,9 @@ bg_surf = pygame.image.load(join('Game', 'bg.png')).convert_alpha()
 
 all_sprites = pygame.sprite.Group()
 
+player = Player((10, 630), all_sprites)
+dice = Dice((320, 320), all_sprites)
 
-player = Player((320, 320), all_sprites)
 
 while running:
     dt = clock.tick() / 1000
