@@ -2,6 +2,22 @@ import pygame
 from os.path import join
 import random
 
+Player_Offset = {
+     1 : (30, 50),
+     2 : (50, 50)
+ }
+
+def get_title_position(title_number, offset=((0, 0))):
+    row = (title_number - 1) // 10
+    col = (title_number - 1) % 10
+
+    if row % 2 == 1:
+        col = 9 - col
+
+    tile_size = 64
+    x = col * title_size + title_size // 2  +  offset[0]
+    y = 640 - (row * tile_size + tile_size // 2) + offset[1]
+    return (x, y)
 
 class Dice(pygame.sprite.Sprite):
     def __init__(self, pos, groups):
@@ -43,30 +59,31 @@ class Dice(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos, groups):
+    def __init__(self, pos, image, groups):
         super().__init__(groups)
         self.image = pygame.image.load(
-            join("Game", "player", "player1.png")
-        ).convert_alpha()
-        self.image = pygame.image.load(
-            join("Game", "player", "player2.png")
+            join("Game", "player", image)
         ).convert_alpha()
         self.image = pygame.transform.rotozoom(self.image, 0, 0.1)
         self.rect = self.image.get_rect(bottomleft=pos)
 
 
-class Board(pygame.sprite.Sprite):
-    def __init__(self, pos, groups):
-        super().__init__(groups)
+
+
+#class Board(pygame.sprite.Sprite):
+    #def __init__(self, pos, groups):
+        #super().__init__(groups)
 
 
 pygame.init()
 
-WINDOW_WIDTH, WINDOW_HEIGHT = 640, 640
+WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 display_surf = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Snake And Ladders")
 running = True
 clock = pygame.time.Clock()
+
+
 
 # Gamesetup
 board_size = 100
@@ -78,7 +95,9 @@ bg_surf = pygame.image.load(join("Game", "bg.png")).convert_alpha()
 
 all_sprites = pygame.sprite.Group()
 
-player = Player((10, 630), all_sprites)
+player1 = Player((20, 630), "player1.png", [all_sprites])
+player2 = Player((10, 630), "player2.png", [all_sprites])
+
 dice = Dice((320, 320), all_sprites)
 
 
