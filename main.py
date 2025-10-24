@@ -2,22 +2,22 @@ import pygame
 from os.path import join
 import random
 
-Player_Offset = {
-     1 : (30, 50),
-     2 : (50, 50)
- }
 
-def get_title_position(title_number, offset=((0, 0))):
-    row = (title_number - 1) // 10
-    col = (title_number - 1) % 10
+Player_Offset = {1: (20, 10), 2: (-20, -10)}
+
+
+def get_tile_position(tile_number, offset=((0, 0))):
+    row = (tile_number - 1) // 10
+    col = (tile_number - 1) % 10
 
     if row % 2 == 1:
         col = 9 - col
 
     tile_size = 64
-    x = col * title_size + title_size // 2  +  offset[0]
+    x = col * tile_size + tile_size // 2 + offset[0]
     y = 640 - (row * tile_size + tile_size // 2) + offset[1]
     return (x, y)
+
 
 class Dice(pygame.sprite.Sprite):
     def __init__(self, pos, groups):
@@ -39,6 +39,8 @@ class Dice(pygame.sprite.Sprite):
         self.roll_timer = 0
         self.roll_duration = 0.5
 
+        self.roll_complete = False
+
     def start_roll(self):
         if not self.is_rolling:
             self.is_rolling = True
@@ -51,28 +53,40 @@ class Dice(pygame.sprite.Sprite):
             self.image = pygame.transform.rotozoom(random.choice(self.faces), 0, 0.1)
 
             if self.roll_timer >= self.roll_duration:
-               self.is_rolling = False
-               self.current_value = random.randint(1, 6)
-               final_face = self.faces[self.current_value - 1]
-               self.image = pygame.transform.rotozoom(final_face , 0, 0.1)
-               print(f"🎲 Dice-rolled : {self.current_value}")
-
+                self.is_rolling = False
+                self.current_value = random.randint(1, 6)
+                final_face = self.faces[self.current_value - 1]
+                self.image = pygame.transform.rotozoom(final_face, 0, 0.1)
+                print(f"🎲 Dice-rolled : {self.current_value}")
+        
+                self.roll_complete = True
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, image, groups):
         super().__init__(groups)
-        self.image = pygame.image.load(
-            join("Game", "player", image)
-        ).convert_alpha()
+        self.image = pygame.image.load(join("Game", "player", image)).convert_alpha()
         self.image = pygame.transform.rotozoom(self.image, 0, 0.1)
         self.rect = self.image.get_rect(bottomleft=pos)
 
+        self.current_tile = 1
+        self.offset = (0, 0)  # separate player visually
 
+    def move(self, steps, snakes, ladders):
+        next_tile = self.current_tile + steps
+        if next_tile > 100:
+            next_tile = 100
 
+        # snake and ladders
+        if next_tile in snakes:
+            print(f"🐍 Oh no! Snake from {next_tile} → {snakes[next_tile]}")
+            next_tile = snakes[next_tile]
+        elif next_tile in ladders:
+            print(f"🪜 Yay! Ladder from {self.current_tile} → {ladders[next_tile]}")
+            next_tile = ladders[next_tile]
 
-#class Board(pygame.sprite.Sprite):
-    #def __init__(self, pos, groups):
-        #super().__init__(groups)
+        self.current_tile = next_tile
+        self.rect.center = get_tile_position(self.current_tile, self.offset)
+        print(f"Player Moved to tile{self.current_tile}")
 
 
 pygame.init()
@@ -82,7 +96,6 @@ display_surf = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Snake And Ladders")
 running = True
 clock = pygame.time.Clock()
-
 
 
 # Gamesetup
@@ -100,6 +113,8 @@ player2 = Player((10, 630), "player2.png", [all_sprites])
 
 dice = Dice((320, 320), all_sprites)
 
+current_player = 1
+dice.roll_complete = False
 
 while running:
     dt = clock.tick() / 1000
@@ -115,6 +130,17 @@ while running:
     all_sprites.draw(display_surf)
 
     all_sprites.update(dt)
+
+    if dice.roll_complete:
+        if current_player == 1:
+            player1.move(dice.current_value, snakes, ladders)
+            current_player = 2
+
+        else:
+            player2.move(dice.current_value, snakes, ladders)
+            current_player = 1
+
+        dice.roll_complete = False
 
     pygame.display.update()
 
