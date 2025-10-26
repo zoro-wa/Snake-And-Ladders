@@ -116,15 +116,31 @@ dice = Dice((320, 320), all_sprites)
 current_player = 1
 dice.roll_complete = False
 
+mode = "cpu"
+cpu_timer = 0
+
 while running:
     dt = clock.tick() / 1000
     # event loop
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if mode == "2player":
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not dice.is_rolling:
+                 dice.start_roll()
+        
+        elif mode == "cpu":
+            if current_player == 1:
 
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-            dice.start_roll()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not dice.is_rolling:
+                    dice.start_roll()
+
+    if mode == "cpu" and current_player == 2:
+        if not dice.is_rolling and not dice.roll_complete:
+            cpu_timer += dt
+            if cpu_timer > 1.0:
+                dice.start_roll()
+                cpu_timer = 0
 
     display_surf.blit(bg_surf, (0, 0))
     all_sprites.draw(display_surf)
