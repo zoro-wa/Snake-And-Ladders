@@ -58,8 +58,9 @@ class Dice(pygame.sprite.Sprite):
                 final_face = self.faces[self.current_value - 1]
                 self.image = pygame.transform.rotozoom(final_face, 0, 0.1)
                 print(f"🎲 Dice-rolled : {self.current_value}")
-        
+
                 self.roll_complete = True
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos, image, groups):
@@ -78,10 +79,10 @@ class Player(pygame.sprite.Sprite):
 
         # snake and ladders
         if next_tile in snakes:
-            print(f"🐍 Oh no! Snake from {next_tile} → {snakes[next_tile]}")
+            print(f"Oh no! Snake from {next_tile} → {snakes[next_tile]}")
             next_tile = snakes[next_tile]
         elif next_tile in ladders:
-            print(f"🪜 Yay! Ladder from {self.current_tile} → {ladders[next_tile]}")
+            print(f"Yay! Ladder from {self.current_tile} → {ladders[next_tile]}")
             next_tile = ladders[next_tile]
 
         self.current_tile = next_tile
@@ -90,6 +91,9 @@ class Player(pygame.sprite.Sprite):
 
 
 pygame.init()
+
+font = pygame.font.Font(join("Game", "fonts", "Super Kindly.ttf"), 30)
+status_text = "Press SPACE to rock and roll"
 
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 display_surf = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -105,6 +109,7 @@ ladders = {1: 38, 4: 14, 9: 31, 21: 42, 28: 94, 51: 67, 72: 91, 80: 99}
 
 # import
 bg_surf = pygame.image.load(join("Game", "bg.png")).convert_alpha()
+bg_surf = pygame.transform.smoothscale(bg_surf, (720, 720)) 
 
 all_sprites = pygame.sprite.Group()
 
@@ -126,13 +131,21 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if mode == "2player":
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not dice.is_rolling:
-                 dice.start_roll()
-        
+            if (
+                event.type == pygame.KEYDOWN
+                and event.key == pygame.K_SPACE
+                and not dice.is_rolling
+            ):
+                dice.start_roll()
+
         elif mode == "cpu":
             if current_player == 1:
 
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE and not dice.is_rolling:
+                if (
+                    event.type == pygame.KEYDOWN
+                    and event.key == pygame.K_SPACE
+                    and not dice.is_rolling
+                ):
                     dice.start_roll()
 
     if mode == "cpu" and current_player == 2:
@@ -148,15 +161,31 @@ while running:
     all_sprites.update(dt)
 
     if dice.roll_complete:
+        status_text = f" Dice rolled: "
+
         if current_player == 1:
             player1.move(dice.current_value, snakes, ladders)
             current_player = 2
+            status_text += " Player 2's Turn"
 
         else:
             player2.move(dice.current_value, snakes, ladders)
             current_player = 1
+            status_text += " Player 1's Turn"
 
         dice.roll_complete = False
+
+    pygame.draw.rect(display_surf, (30,30,30), (720, 0, 560, 720))
+
+    turn_text = font.render(f" Player {current_player}'s Turn", True, (255, 255, 255))
+    display_surf.blit(turn_text, (750, 100))
+
+    dice_text = font.render(f" Dice: {dice.current_value}", True, (200, 200, 200))
+    display_surf.blit(dice_text, (750, 180))
+
+
+    status_display = font.render(status_text, True, (255, 255, 100))
+    display_surf.blit(status_display, (750, 300))
 
     pygame.display.update()
 
