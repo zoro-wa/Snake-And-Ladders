@@ -108,8 +108,8 @@ snakes = {17: 7, 62: 19, 54: 34, 64: 60, 87: 36, 93: 73, 94: 75, 98: 79}
 ladders = {1: 38, 4: 14, 9: 31, 21: 42, 28: 94, 51: 67, 72: 91, 80: 99}
 
 # import
-bg_surf = pygame.image.load(join('Game', 'bg.png')).convert_alpha()
-bg_surf = pygame.transform.smoothscale(bg_surf, (720, 720)) 
+bg_surf = pygame.image.load(join("Game", "bg.png")).convert_alpha()
+bg_surf = pygame.transform.smoothscale(bg_surf, (720, 720))
 
 all_sprites = pygame.sprite.Group()
 
@@ -121,18 +121,31 @@ dice = Dice((320, 320), all_sprites)
 mode = "menu_mode"
 cpu_timer = 0
 
-start_bg = pygame.image.load(join('Game', 'start.png' )).convert_alpha()
+start_bg = pygame.image.load(join("Game", "start.png")).convert_alpha()
 start_bg = pygame.transform.smoothscale(start_bg, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
 show_start = True
 
 menu_mode = None
 
-pvp_text = font.render("Player vs Player", True, (255, 255, 255))
-cpu_text = font.render("Player vs Computer", True, (255, 255, 255))
+title_font = pygame.font.Font(join("Game", "fonts", "Super Kindly.ttf"), 60)
+button_font = pygame.font.Font(join("Game", "fonts", "Super Kindly.ttf"), 36)
 
-pvp_rect = pvp_text.get_rect(center=(WINDOW_WIDTH // 2, 300))
-cpu_rect = cpu_text.get_rect(center=(WINDOW_WIDTH // 2, 400))
+# Button_Setup
+pvp_rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, 320, 300, 60)
+cpu_rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, 420, 300, 60)
+quit_rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, 520, 300, 60)
+
+
+def draw_button(rect, text, hovered=False, color=(255, 255, 255)):
+    # creating a hover effect on bordered buttons"
+    bg_color = (50, 50, 50) if hovered else (30, 30, 30)
+    border_color = (255, 255, 0) if hovered else (180, 180, 180)
+    pygame.draw.rect(display_surf, bg_color, rect, border_radius=12)
+    pygame.draw.rect(display_surf, bg_color, rect, width=3, border_radius=12)
+    text_surf = button_font.render(text, True, color)
+    text_rect = text_surf.get_rect(center=rect.center)
+    display_surf.blit(text_surf, text_rect)
 
 
 while show_start:
@@ -140,37 +153,42 @@ while show_start:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-    
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        if pvp_rect.collidepoint(event.pos):
-            menu_mode = "2player"
-            show_start = False
 
-        elif cpu_rect.collidepoint(event.pos):
-            menu_mode = "cpu"
-            show_start = False
-        
-    
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if pvp_rect.collidepoint(event.pos):
+                menu_mode = "2player"
+                show_start = False
+
+            elif cpu_rect.collidepoint(event.pos):
+                menu_mode = "cpu"
+                show_start = False
+
+            elif quit_rect.collidepoint(event.pos):
+                pygame.quit()
+                exit()
+
+
     mouse_pos = pygame.mouse.get_pos()
-    pvp_color = (255, 255, 0) if pvp_rect.collidepoint(mouse_pos) else (255, 255, 255)
-    cpu_color = (255, 255, 0) if cpu_rect.collidepoint(mouse_pos) else (255, 255, 255)
-
-    pvp_text = font.render("Player Vs Player", True, pvp_color)
-    cpu_text = font.render("Player Vs Computer", True, cpu_color)
-
 
     display_surf.blit(start_bg, (0, 0))
-    title = font.render(" Snake & Ladders ", True, (255, 255, 255))
-    display_surf.blit(title, (WINDOW_WIDTH // 2 - 150, 150))
-    display_surf.blit(pvp_text, pvp_rect)
-    display_surf.blit(cpu_text, cpu_rect)
-    text = font.render("Press Enter to hiss!", True, (255, 255, 255))
-    display_surf.blit(text, (450, 350))
+    title = title_font.render(" Snake & Ladders ", True, (255, 255, 255))
+    title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, 180))
+    display_surf.blit(title, title_rect)
+
+    # Draw Buttons with hover effect.
+    draw_button(pvp_rect, "Player vs Player", hovered=pvp_rect.collidepoint(mouse_pos))
+    draw_button(cpu_rect, "Player vs Computer", hovered=cpu_rect.collidepoint(mouse_pos))
+    draw_button(
+        quit_rect,
+        "Quit Game",
+        hovered=quit_rect.collidepoint(mouse_pos),
+        color=(255, 100, 100),
+    )
+
     pygame.display.update()
 
 current_player = 1
 dice.roll_complete = False
-
 
 
 while running:
@@ -224,15 +242,13 @@ while running:
 
         dice.roll_complete = False
 
- 
-    pygame.draw.rect(display_surf, (30,30,30), (720, 0, 560, 720))
+    pygame.draw.rect(display_surf, (30, 30, 30), (720, 0, 560, 720))
 
-    #turn_text = font.render(f" Player {current_player}'s Turn", True, (255, 255, 255))
-    #display_surf.blit(turn_text, (750, 100))
+    # turn_text = font.render(f" Player {current_player}'s Turn", True, (255, 255, 255))
+    # display_surf.blit(turn_text, (750, 100))
 
     dice_text = font.render(f" Dice: {dice.current_value}", True, (200, 200, 200))
     display_surf.blit(dice_text, (750, 180))
-
 
     status_display = font.render(status_text, True, (255, 255, 100))
     display_surf.blit(status_display, (750, 300))
