@@ -118,21 +118,52 @@ player2 = Player(get_tile_position(1, Player_Offset[2]), "player2.png", [all_spr
 
 dice = Dice((320, 320), all_sprites)
 
+mode = "menu_mode"
+cpu_timer = 0
+
 start_bg = pygame.image.load(join('Game', 'start.png' )).convert_alpha()
 start_bg = pygame.transform.smoothscale(start_bg, (WINDOW_WIDTH, WINDOW_HEIGHT))
 
-
 show_start = True
+
+menu_mode = None
+
+pvp_text = font.render("Player vs Player", True, (255, 255, 255))
+cpu_text = font.render("Player vs Computer", True, (255, 255, 255))
+
+pvp_rect = pvp_text.get_rect(center=(WINDOW_WIDTH // 2, 300))
+cpu_rect = cpu_text.get_rect(center=(WINDOW_WIDTH // 2, 400))
+
 
 while show_start:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
+            exit()
     
-    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-        show_start = False
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if pvp_rect.collidepoint(event.pos):
+            menu_mode = "2player"
+            show_start = False
+
+        elif cpu_rect.collidepoint(event.pos):
+            menu_mode = "cpu"
+            show_start = False
+        
+    
+    mouse_pos = pygame.mouse.get_pos()
+    pvp_color = (255, 255, 0) if pvp_rect.collidepoint(mouse_pos) else (255, 255, 255)
+    cpu_color = (255, 255, 0) if cpu_rect.collidepoint(mouse_pos) else (255, 255, 255)
+
+    pvp_text = font.render("Player Vs Player", True, pvp_color)
+    cpu_text = font.render("Player Vs Computer", True, cpu_color)
+
 
     display_surf.blit(start_bg, (0, 0))
+    title = font.render(" Snake & Ladders ", True, (255, 255, 255))
+    display_surf.blit(title, (WINDOW_WIDTH // 2 - 150, 150))
+    display_surf.blit(pvp_text, pvp_rect)
+    display_surf.blit(cpu_text, cpu_rect)
     text = font.render("Press Enter to hiss!", True, (255, 255, 255))
     display_surf.blit(text, (450, 350))
     pygame.display.update()
@@ -140,8 +171,7 @@ while show_start:
 current_player = 1
 dice.roll_complete = False
 
-mode = "cpu"
-cpu_timer = 0
+
 
 while running:
     dt = clock.tick() / 1000
