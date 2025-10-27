@@ -13,9 +13,9 @@ def get_tile_position(tile_number, offset=((0, 0))):
     if row % 2 == 1:
         col = 9 - col
 
-    tile_size = 64
+    tile_size = 72
     x = col * tile_size + tile_size // 2 + offset[0]
-    y = 640 - (row * tile_size + tile_size // 2) + offset[1]
+    y = 720 - (row * tile_size + tile_size // 2) + offset[1]
     return (x, y)
 
 
@@ -67,7 +67,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = pygame.image.load(join("Game", "player", image)).convert_alpha()
         self.image = pygame.transform.rotozoom(self.image, 0, 0.1)
-        self.rect = self.image.get_rect(bottomleft=pos)
+        self.rect = self.image.get_rect(center=pos)
 
         self.current_tile = 1
         self.offset = (0, 0)  # separate player visually
@@ -108,15 +108,34 @@ snakes = {17: 7, 62: 19, 54: 34, 64: 60, 87: 36, 93: 73, 94: 75, 98: 79}
 ladders = {1: 38, 4: 14, 9: 31, 21: 42, 28: 94, 51: 67, 72: 91, 80: 99}
 
 # import
-bg_surf = pygame.image.load(join("Game", "bg.png")).convert_alpha()
+bg_surf = pygame.image.load(join('Game', 'bg.png')).convert_alpha()
 bg_surf = pygame.transform.smoothscale(bg_surf, (720, 720)) 
 
 all_sprites = pygame.sprite.Group()
 
-player1 = Player((20, 630), "player1.png", [all_sprites])
-player2 = Player((10, 630), "player2.png", [all_sprites])
+player1 = Player(get_tile_position(1, Player_Offset[1]), "player1.png", [all_sprites])
+player2 = Player(get_tile_position(1, Player_Offset[2]), "player2.png", [all_sprites])
 
 dice = Dice((320, 320), all_sprites)
+
+start_bg = pygame.image.load(join('Game', 'start.png' )).convert_alpha()
+start_bg = pygame.transform.smoothscale(start_bg, (WINDOW_WIDTH, WINDOW_HEIGHT))
+
+
+show_start = True
+
+while show_start:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+    
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+        show_start = False
+
+    display_surf.blit(start_bg, (0, 0))
+    text = font.render("Press Enter to hiss!", True, (255, 255, 255))
+    display_surf.blit(text, (450, 350))
+    pygame.display.update()
 
 current_player = 1
 dice.roll_complete = False
@@ -175,10 +194,11 @@ while running:
 
         dice.roll_complete = False
 
+ 
     pygame.draw.rect(display_surf, (30,30,30), (720, 0, 560, 720))
 
-    turn_text = font.render(f" Player {current_player}'s Turn", True, (255, 255, 255))
-    display_surf.blit(turn_text, (750, 100))
+    #turn_text = font.render(f" Player {current_player}'s Turn", True, (255, 255, 255))
+    #display_surf.blit(turn_text, (750, 100))
 
     dice_text = font.render(f" Dice: {dice.current_value}", True, (200, 200, 200))
     display_surf.blit(dice_text, (750, 180))
