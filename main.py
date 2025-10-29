@@ -88,10 +88,6 @@ start_bg = pygame.transform.smoothscale(pygame.image.load(join("Game","start.png
 # --- Game setup ---
 snakes = {17:7,62:19,54:34,64:60,87:36,93:73,94:75,98:79}
 ladders = {1:38,4:14,9:31,21:42,28:94,51:67,72:91,80:99}
-all_sprites = pygame.sprite.Group()
-player1 = Player(get_tile_position(1,Player_Offset[1]),"player1.png",[all_sprites])
-player2 = Player(get_tile_position(1,Player_Offset[2]),"player2.png",[all_sprites])
-dice = Dice((1000, 450),all_sprites)
 
 # --- Start menu ---
 pvp_rect = pygame.Rect(WINDOW_WIDTH//2-150,320,360,60)
@@ -213,15 +209,19 @@ def winner_screen(winner_name):
 
 def manage_winner_actions(result, mode, name1, name2):
     if result == "play_again":
-        main(mode, name1, name2)
+        return "play_again"
     
     elif result == "menu":
-        new_mode = show_start_menu()
-        name1, name2 = get_names(new_mode)
-        main(new_mode, name1, name2)
+        return "menu"
 
 # --- Main Game Loop ---
 def main(mode,name1,name2):
+
+    all_sprites = pygame.sprite.Group()
+    player1 = Player(get_tile_position(1,Player_Offset[1]),"player1.png",[all_sprites])
+    player2 = Player(get_tile_position(1,Player_Offset[2]),"player2.png",[all_sprites])
+    dice = Dice((1000, 450),all_sprites)
+
     running=True
     current_player=1
     cpu_timer=0
@@ -261,16 +261,14 @@ def main(mode,name1,name2):
             if current_player==1:
                 player1.move(dice.current_value,snakes,ladders)
                 if player1.current_tile == 100:
-                    result = winner_screen(name1)
-                    manage_winner_actions(result, mode, name1, name2)
+                    return name1
                 current_player=2
             else:
                 player2.move(dice.current_value,snakes,ladders)
                 if player2.current_tile == 100:
-                    result = winner_screen(name2)
-                    manage_winner_actions(result, mode, name1, name2)
-                current_player=1
-            dice.roll_complete=False
+                    return name2
+                current_player = 1
+            dice.roll_complete = False
 
         pygame.display.update()
 
@@ -278,6 +276,16 @@ def main(mode,name1,name2):
 
 # --- main is called (Run) ---
 if __name__=="__main__":
-    mode = show_start_menu()
-    name1,name2 = get_names(mode)
-    main(mode,name1,name2)
+    while True:
+        mode = show_start_menu()
+        name1,name2 = get_names(mode)
+        while True:
+            winner_name = main(mode, name1, name2)
+            result = winner_screen(winner_name)
+            
+            if result == "menu":
+                continue
+            elif result == "play_again":
+                continue
+            else:
+                break
