@@ -154,6 +154,70 @@ def get_names(mode):
         pygame.display.update()
     return name1 or "Player1", name2 or "Player2"
 
+
+def winner_screen(winner_name):
+    "Shows the winner name with options to play again or exit"
+
+    winner_active = True
+    clock = pygame.time.Clock()
+
+    #Fonts
+    title_font = pygame.font.Font(join('Game', 'fonts', 'Magic Sound.ttf'), 60)
+    button_font = pygame.font.Font(join('Game', 'fonts', 'Magic Sound.ttf'), 30)
+    
+    gold = (255, 215, 0)
+    white = (255, 255, 255)
+
+
+    play_again_rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, 400, 300, 60)
+    menu_rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, 480, 300, 60)
+    quit_rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, 560, 300, 60)
+
+    while winner_active:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if play_again_rect.collidepoint(event.pos):
+                   return "play_again"
+
+                elif menu_rect.collidepoint(event.pos):
+                    return"menu"
+
+                elif quit_rect.collidepoint(event.pos):
+                    pygame.quit()
+                    exit()
+
+        
+        mouse_pos = pygame.mouse.get_pos()
+        display_surf.fill((54, 15, 90)) 
+         
+
+        #Winner text               
+        winner_text = title_font.render(f"{winner_name} is Victorious!", True, gold)
+        winner_rect = winner_text.get_rect(center=(WINDOW_WIDTH // 2, 200))
+        display_surf.blit(winner_text, winner_rect)
+
+        #buttons
+
+        draw_button(play_again_rect, "Play Again", hovered=play_again_rect.collidepoint(mouse_pos))
+        draw_button(menu_rect, "Main Menu", hovered= menu_rect.collidepoint(mouse_pos))
+        draw_button(quit_rect, "Quit", hovered=quit_rect.collidepoint(mouse_pos),color=(255,80, 70))
+
+        pygame.display.update()
+        clock.tick(60)
+
+def manage_winner_actions(result, mode, name1, name2):
+    if result == "play_again":
+        main(mode, name1, name2)
+    
+    elif result == "menu":
+        new_mode = show_start_menu()
+        name1, name2 = get_names(new_mode)
+        main(new_mode, name1, name2)
+
 # --- Main Game Loop ---
 def main(mode,name1,name2):
     running=True
@@ -183,9 +247,15 @@ def main(mode,name1,name2):
         if dice.roll_complete:
             if current_player==1:
                 player1.move(dice.current_value,snakes,ladders)
+                if player1.current_tile == 100:
+                    result = winner_screen(name1)
+                    handle_winner_action(result, mode, name1, name2)
                 current_player=2
             else:
                 player2.move(dice.current_value,snakes,ladders)
+                if player2.current_tile == 100:
+                    result = winner_screen(name2)
+                    handle_winner_action(resul, mode, name1, name2)
                 current_player=1
             dice.roll_complete=False
 
@@ -200,7 +270,7 @@ def main(mode,name1,name2):
 
     pygame.quit()
 
-# --- Run ---
+# --- main is called (Run) ---
 if __name__=="__main__":
     mode = show_start_menu()
     name1,name2 = get_names(mode)
