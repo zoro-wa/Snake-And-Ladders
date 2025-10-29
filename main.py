@@ -27,8 +27,10 @@ def draw_button(rect, text, hovered=False, color=(255,255,255)):
 class Dice(pygame.sprite.Sprite):
     def __init__(self, pos, groups):
         super().__init__(groups)
-        self.faces = [pygame.image.load(join("Game","dice",f"inverted-dice-{i}.png")).convert_alpha() for i in range(1,7)]
-        self.image = pygame.transform.rotozoom(self.faces[0],0,0.1)
+        scale = 0.156
+        self.faces = [pygame.transform.rotozoom(pygame.image.load(join("Game","dice",f"inverted-dice-{i}.png")).convert_alpha(), 0, scale
+        ) for i in range(1,7)]
+        self.image = self.faces[0]
         self.rect = self.image.get_rect(center=pos)
         self.current_value = 1
         self.is_rolling = False
@@ -44,11 +46,11 @@ class Dice(pygame.sprite.Sprite):
     def update(self, dt):
         if self.is_rolling:
             self.roll_timer += dt
-            self.image = pygame.transform.rotozoom(random.choice(self.faces),0,0.1)
+            self.image = random.choice(self.faces)
             if self.roll_timer >= self.roll_duration:
                 self.is_rolling = False
                 self.current_value = random.randint(1,6)
-                self.image = pygame.transform.rotozoom(self.faces[self.current_value-1],0,0.1)
+                self.image = self.faces[self.current_value-1]
                 self.roll_complete = True
                 print("Dice rolled:", self.current_value)
 
@@ -89,7 +91,7 @@ ladders = {1:38,4:14,9:31,21:42,28:94,51:67,72:91,80:99}
 all_sprites = pygame.sprite.Group()
 player1 = Player(get_tile_position(1,Player_Offset[1]),"player1.png",[all_sprites])
 player2 = Player(get_tile_position(1,Player_Offset[2]),"player2.png",[all_sprites])
-dice = Dice((320,320),all_sprites)
+dice = Dice((1000, 450),all_sprites)
 
 # --- Start menu ---
 pvp_rect = pygame.Rect(WINDOW_WIDTH//2-150,320,360,60)
@@ -241,30 +243,34 @@ def main(mode,name1,name2):
 
         all_sprites.update(dt)
         display_surf.blit(bg_surf,(0,0))
+  
+        # Draw all sprites before everything
+        pygame.draw.rect(display_surf,(30,30,30),(720,0,560,720))
+        pygame.draw.rect(display_surf, (255,255,255), (740,40,500,640), 3)
+        
         all_sprites.draw(display_surf)
 
+        #Side Panel
+        display_surf.blit(font.render(f"{name1}",True,(255,255,255)),(750,80))
+        display_surf.blit(font.render(f"{name2}",True,(255,255,255)),(1050,80))
+        display_surf.blit(font.render(f"Dice: {dice.current_value}",True,(200,200,200)),(750,180))
+        display_surf.blit(font.render(status_text,True,(255,255,100)),(750,300))
+        
         # Dice result handling
         if dice.roll_complete:
             if current_player==1:
                 player1.move(dice.current_value,snakes,ladders)
                 if player1.current_tile == 100:
                     result = winner_screen(name1)
-                    handle_winner_action(result, mode, name1, name2)
+                    manage_winner_actions(result, mode, name1, name2)
                 current_player=2
             else:
                 player2.move(dice.current_value,snakes,ladders)
                 if player2.current_tile == 100:
                     result = winner_screen(name2)
-                    handle_winner_action(resul, mode, name1, name2)
+                    manage_winner_actions(result, mode, name1, name2)
                 current_player=1
             dice.roll_complete=False
-
-        # Side panel
-        pygame.draw.rect(display_surf,(30,30,30),(720,0,560,720))
-        display_surf.blit(font.render(f"{name1}",True,(255,255,255)),(750,80))
-        display_surf.blit(font.render(f"{name2}",True,(255,255,255)),(1050,80))
-        display_surf.blit(font.render(f"Dice: {dice.current_value}",True,(200,200,200)),(750,180))
-        display_surf.blit(font.render(status_text,True,(255,255,100)),(750,300))
 
         pygame.display.update()
 
