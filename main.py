@@ -57,13 +57,20 @@ class Dice(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self,pos,image,groups):
         super().__init__(groups)
-        self.image = pygame.transform.rotozoom(pygame.image.load(join("Game","player",image)).convert_alpha(),0,0.1)
+        self.image = pygame.image.load(join("Game","player",image)).convert_alpha()
         self.rect = self.image.get_rect(center=pos)
         self.current_tile = 1
-        self.offset = (0,0)
+        self.target_tile = 1
+        self.move_path = []
+        self.move_speed = 250
+        self.move_progress = 0
+        self.moving = False
+
+    
+   
     def move(self, steps, snakes, ladders):
         next_tile = self.current_tile + steps
-        if next_tile>100: next_tile=100
+        if next_tile>100: return
         if next_tile in snakes:
             next_tile = snakes[next_tile]
         elif next_tile in ladders:
@@ -87,7 +94,7 @@ start_bg = pygame.transform.smoothscale(pygame.image.load(join("Game","start.png
 
 # --- Game setup ---
 snakes = {17:7,62:19,54:34,64:60,87:36,93:73,94:75,98:79}
-ladders = {1:38,4:14,9:31,21:42,28:94,51:67,72:91,80:99}
+ladders = {4:14,9:31,21:42,28:94,51:67,72:91,80:99}
 
 # --- Start menu ---
 pvp_rect = pygame.Rect(WINDOW_WIDTH//2-150,320,360,60)
@@ -207,7 +214,7 @@ def winner_screen(winner_name):
         pygame.display.update()
         clock.tick(60)
 
-def manage_winner_actions(result, mode, name1, name2):
+def manage_winner_actions(result):
     if result == "play_again":
         return "play_again"
     
@@ -226,14 +233,26 @@ def main(mode,name1,name2):
     current_player=1
     cpu_timer=0
     status_text="Press SPACE to roll the dice"
+    
+    menu_button_rect = pygame.Rect(770, 580, 200, 50)
+    quit_button_rect = pygame.Rect(1000, 580, 200, 50)
 
     while running:
         dt = clock.tick()/1000
+        mouse_pos = pygame.mouse.get_pos()
+
         for e in pygame.event.get():
-            if e.type==pygame.QUIT: running=False
+            if e.type==pygame.QUIT: pygame.quit(); exit()
             if e.type==pygame.KEYDOWN and e.key==pygame.K_SPACE and not dice.is_rolling:
                 if mode=="2player" or (mode=="cpu" and current_player==1):
                     dice.start_roll()
+            
+            if e.type ==pygame.MOUSEBUTTONDOWN:
+                if menu_button_rect.collidepoint(e.pos):
+                    return "menu"
+                elif quit_button_rect.collidepoint(e.pos):
+                    pygame.quit()
+                    exit()
 
         if mode=="cpu" and current_player==2 and not dice.is_rolling and not dice.roll_complete:
             cpu_timer+=dt
@@ -256,7 +275,10 @@ def main(mode,name1,name2):
         display_surf.blit(font.render(f"Dice: {dice.current_value}",True,(200,200,200)),(750,180))
         display_surf.blit(font.render(status_text,True,(255,255,100)),(750,300))
         
-        # Dice result handling
+        draw_button(menu_button_rect, "Main_Menu", hovered=menu_button_rect.collidepoint(mouse_pos), color=(255, 255, 0))
+        draw_button(quit_button_rect, "Quit", hovered=quit_button_rect.collidepoint(mouse_pos), color=(255, 100, 100) )
+
+        # Dice result Handling
         if dice.roll_complete:
             if current_player==1:
                 player1.move(dice.current_value,snakes,ladders)
@@ -280,12 +302,21 @@ if __name__=="__main__":
         mode = show_start_menu()
         name1,name2 = get_names(mode)
         while True:
-            winner_name = main(mode, name1, name2)
-            result = winner_screen(winner_name)
-            
+
+            result = main(mode, name1, name2)
+
             if result == "menu":
-                continue
-            elif result == "play_again":
-                continue
-            else:
                 break
+
+            winner_name = result
+            action = winner_screen(winner_name)
+
+            if action == "menu":
+                break
+
+            elif action == "play_again":
+                continue
+
+            else:
+                pygame.quit()
+                exit()
