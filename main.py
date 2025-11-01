@@ -42,6 +42,7 @@ class Dice(pygame.sprite.Sprite):
         if not self.is_rolling:
             self.is_rolling = True
             self.roll_timer = 0
+            dice_sound.play()
 
     def update(self, dt):
         if self.is_rolling:
@@ -52,35 +53,71 @@ class Dice(pygame.sprite.Sprite):
                 self.current_value = random.randint(1,6)
                 self.image = self.faces[self.current_value-1]
                 self.roll_complete = True
+                dice_sound.stop()
                 print("Dice rolled:", self.current_value)
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self,pos,image,groups):
+    def __init__(self,pos,image_name,groups):
         super().__init__(groups)
-        self.image = pygame.image.load(join("Game","player",image)).convert_alpha()
+        image = pygame.image.load(join("Game","player",image_name)).convert_alpha()
+        scale_factor = 0.120
+        self.image = pygame.transform.rotozoom(image, 0, scale_factor)
         self.rect = self.image.get_rect(center=pos)
+        
+        # differs offset offset [1] or [2]
+        self.offset = Player_Offset[1 if "1" in image_name else 2]
+
+        # Setup for movement
         self.current_tile = 1
         self.target_tile = 1
-        self.move_path = []
-        self.move_speed = 250
-        self.move_progress = 0
+        self.move_queue = []
+        self.step_timer = 0
+        self.step_delay = 0.14
         self.moving = False
-
+        self.auto_jump = None
     
-   
-    def move(self, steps, snakes, ladders):
-        next_tile = self.current_tile + steps
-        if next_tile>100: return
-        if next_tile in snakes:
-            next_tile = snakes[next_tile]
-        elif next_tile in ladders:
-            next_tile = ladders[next_tile]
-        self.current_tile = next_tile
-        self.rect.center = get_tile_position(self.current_tile,self.offset)
-        print(f"Player moved to {self.current_tile}")
+    def move(self, dice_value, snakes, ladders):
+        target = self.current_tile + dice_value
+        if target>100: return
+
+        self.move_queue = list(range(self.current_tile + 1, target + 1))
+        self.target_tile = target
+        self.moving = True
+        self.step_timer = 0
+
+        if target in snakes:
+            self.auto_jump = snakes[target]
+        elif target in ladders:
+            self.auto_jump = ladders[target]
+        else:
+            self.auto_jump = None        
+
+    def update(self, dt):
+        if self.moving:
+            self.step_timer += dt
+            if self.step_timer >=self.step_delay:
+                self.step_timer = 0
+                if self.move_queue:
+                    next_tile = self.move_queue.pop(0)
+                    self.rect.center = get_tile_position(next_tile, self.offset)
+                else:
+                    self.moving = False
+                    self.current_tile = self.target_tile
+                    if self.auto_jump:
+                       self.current_tile = self.auto_jump
+                       self.rect.center = get_tile_position(self.current_tile, self.offset)
+                       self.auto_jump = None 
+
 
 # --- Pygame init ---
 pygame.init()
+
+# Initialize mixer
+pygame.mixer.init()
+# Dice Sounds
+dice_sound = pygame.mixer.Sound(join('Game', 'music', 'rolling_dice.wav'))
+dice_sound.set_volume(1.5)
+
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280,720
 display_surf = pygame.display.set_mode((WINDOW_WIDTH,WINDOW_HEIGHT))
 pygame.display.set_caption("Snake & Ladders")
@@ -94,7 +131,7 @@ start_bg = pygame.transform.smoothscale(pygame.image.load(join("Game","start.png
 
 # --- Game setup ---
 snakes = {17:7,62:19,54:34,64:60,87:36,93:73,94:75,98:79}
-ladders = {4:14,9:31,21:42,28:94,51:67,72:91,80:99}
+ladders = {4:14,9:31,21:42,28:84,51:67,72:91,80:99}
 
 # --- Start menu ---
 pvp_rect = pygame.Rect(WINDOW_WIDTH//2-150,320,360,60)
@@ -102,6 +139,11 @@ cpu_rect = pygame.Rect(WINDOW_WIDTH//2-150,420,360,60)
 quit_rect = pygame.Rect(WINDOW_WIDTH//2-80,520,200,60)
 
 def show_start_menu():
+    #start menu_bg sound
+    pygame.mixer.music.load(join('Game', 'music', 'start_menu.mp3'))
+    pygame.mixer.music.set_volume(1.5)
+    pygame.mixer.music.play(-1)
+
     show=True
     mode=None
     while show:
@@ -111,10 +153,13 @@ def show_start_menu():
                 pygame.quit();exit()
             if e.type==pygame.MOUSEBUTTONDOWN:
                 if pvp_rect.collidepoint(e.pos):
+                    pygame.mixer.music.stop()
                     mode="2player";show=False
                 elif cpu_rect.collidepoint(e.pos):
+                    pygame.mixer_music.stop()
                     mode="cpu";show=False
                 elif quit_rect.collidepoint(e.pos):
+                    pygame.mixer.music.stop()
                     pygame.quit();exit()
         display_surf.blit(start_bg,(0,0))
         title = title_font.render("Snake & Ladders",True,(255,255,255))
@@ -198,15 +243,11 @@ def winner_screen(winner_name):
         
         mouse_pos = pygame.mouse.get_pos()
         display_surf.fill((54, 15, 90)) 
-         
-
         #Winner text               
         winner_text = title_font.render(f"{winner_name} is Victorious!", True, gold)
         winner_rect = winner_text.get_rect(center=(WINDOW_WIDTH // 2, 200))
         display_surf.blit(winner_text, winner_rect)
-
         #buttons
-
         draw_button(play_again_rect, "Play Again", hovered=play_again_rect.collidepoint(mouse_pos))
         draw_button(menu_rect, "Main Menu", hovered= menu_rect.collidepoint(mouse_pos))
         draw_button(quit_rect, "Quit", hovered=quit_rect.collidepoint(mouse_pos),color=(255,80, 70))
@@ -232,6 +273,8 @@ def main(mode,name1,name2):
     running=True
     current_player=1
     cpu_timer=0
+    waiting_for_roll = True
+    cpu_waiting = False
     status_text="Press SPACE to roll the dice"
     
     menu_button_rect = pygame.Rect(770, 580, 200, 50)
@@ -243,9 +286,14 @@ def main(mode,name1,name2):
 
         for e in pygame.event.get():
             if e.type==pygame.QUIT: pygame.quit(); exit()
-            if e.type==pygame.KEYDOWN and e.key==pygame.K_SPACE and not dice.is_rolling:
-                if mode=="2player" or (mode=="cpu" and current_player==1):
+            if e.type==pygame.KEYDOWN and e.key==pygame.K_SPACE:
+                if not dice.is_rolling and waiting_for_roll and current_player == 1:
                     dice.start_roll()
+                    waiting_for_roll = False
+                elif mode == "2player" and current_player == 2:
+                    dice.start_roll()
+                    waiting_for_roll = False
+
             
             if e.type ==pygame.MOUSEBUTTONDOWN:
                 if menu_button_rect.collidepoint(e.pos):
@@ -254,16 +302,20 @@ def main(mode,name1,name2):
                     pygame.quit()
                     exit()
 
-        if mode=="cpu" and current_player==2 and not dice.is_rolling and not dice.roll_complete:
-            cpu_timer+=dt
-            if cpu_timer>1.0:
-                dice.start_roll()
-                cpu_timer=0
+        if mode=="cpu" and current_player == 2 and waiting_for_roll:
+            if not player1.moving and not player2.moving and not dice.is_rolling:
+                cpu_timer += dt
+                if cpu_timer > 1.0:
+                    dice.start_roll()
+                    waiting_for_roll = False
+                    cpu_timer = 0
 
+ 
         all_sprites.update(dt)
-        display_surf.blit(bg_surf,(0,0))
+
   
         # Draw all sprites before everything
+        display_surf.blit(bg_surf,(0,0))
         pygame.draw.rect(display_surf,(30,30,30),(720,0,560,720))
         pygame.draw.rect(display_surf, (255,255,255), (740,40,500,640), 3)
         
@@ -280,18 +332,41 @@ def main(mode,name1,name2):
 
         # Dice result Handling
         if dice.roll_complete:
-            if current_player==1:
-                player1.move(dice.current_value,snakes,ladders)
-                if player1.current_tile == 100:
-                    return name1
-                current_player=2
-            else:
-                player2.move(dice.current_value,snakes,ladders)
-                if player2.current_tile == 100:
-                    return name2
-                current_player = 1
             dice.roll_complete = False
+            if current_player == 1:
+                player1.move(dice.current_value,snakes,ladders)
+            else:
+                player2.move(dice.current_value, snakes, ladders)
 
+
+        if not player1.moving and not player2.moving and not dice.is_rolling:
+            if player1.current_tile == 100:
+                return name1
+           
+            elif player2.current_tile == 100:
+                return name2
+
+            if not waiting_for_roll:
+                if dice.current_value == 6:
+                    waiting_for_roll = True
+                    if current_player == 1:
+                        status_text = f"{name1} rolled a 6!, Roll again!"
+                    else:
+                        status_text = f"{name2} rolled a 6!, Roll again!"
+                
+                else:
+                    current_player = 2 if current_player == 1 else 1
+                    waiting_for_roll = True
+                    cpu_timer = 0
+                    
+                    if mode == "cpu" and current_player == 2:
+                        status_text = f"{name2} (CPU) is rolling..."
+                    elif current_player == 1:
+                        status_text = f"{name1}, press SPACE to roll the dice"
+                    else:
+                        status_text = f"{name2}, press SPACE to roll the dice"
+
+                    
         pygame.display.update()
 
     pygame.quit()
