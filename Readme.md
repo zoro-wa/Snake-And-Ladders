@@ -70,9 +70,9 @@
 
 ## 🧪 Testing
 The project includes unit tests written using **pytest**.
-
-Run all tests:
-   pytest
+    Run all tests:
+    ```bash
+    pytest
 
 ## 🌱 Future Improvements
 - Playable on mobile devices.
@@ -81,7 +81,6 @@ Run all tests:
 - Improved Animations And Dice-Rolling.
 
 ## ❤️ Credits
-
 - Developed by **Bidhan Raj Shakya**
 - Built with **Python3** and **Pygame**
 - A very Special thanks to **CS50**, **Manoj Kumar Mohotara** for this opportunity, support and motivation.
