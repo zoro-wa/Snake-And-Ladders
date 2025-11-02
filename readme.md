@@ -1,9 +1,8 @@
 # SNAKE AND LADDERS GAME (Python + Pygame)
 
-
-    Basic modern version of The classic *Snake And Ladders" board game which is built
-    using **Python** And **Pygame". It includes **Player vs Player** and **Player vs Computer**
-    modes with decent sound effects, smooth dice-rooling and good visuals.
+Basic modern version of The classic *Snake And Ladders" board game which is built
+using **Python** And **Pygame". It includes **Player vs Player** and **Player vs Computer**
+modes with decent sound effects, smooth dice-rooling and good visuals.
 
 ##  VIDEO URL : https://youtu.be/kZac17eNnHw
 
@@ -85,4 +84,4 @@ The project includes unit tests written using **pytest**.
 ## ❤️ Credits
 - Developed by **Bidhan Raj Shakya**
 - Built with **Python3** and **Pygame**
-- A very Special thanks to **CS50**, **Manoj Kumar Mohotara** for this opportunity, support and motivation.
+- A very Special thanks to **CS50** for this opportunity, support and motivation.
