@@ -70,8 +70,7 @@
 
 ## 🧪 Testing
 The project includes unit tests written using **pytest**.
-Run all tests:
-    ```bash
+    Run all tests:
        pytest
 
 ## 🌱 Future Improvements
